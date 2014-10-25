@@ -204,11 +204,11 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
 	
 		$params = array();
 		
-		print "<br>sql: ".$sql;
-		print "<br>About to execute logging sql.";
+	//	print "<br>sql: ".$sql;
+	//	print "<br>About to execute logging sql.";
        	 	$dao = CRM_Core_DAO::executeQuery( $sql, $params );
        	 	
-       	 	print "<br>done with sql logging.<br>";
+       	 //	print "<br>done with sql logging.<br>";
        	 	$dao->free();
        	 	
        	 

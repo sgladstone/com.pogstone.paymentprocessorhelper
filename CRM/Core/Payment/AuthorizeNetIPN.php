@@ -141,7 +141,7 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
     	 	 $x_amount = 0 - $amount_as_num;
     	 }  	
     	
-    	$sql = "INSERT INTO civicrm_pogstone_authnet_messages (`civicrm_contribution_id`, `civicrm_recur_id`, `rec_type`, `message_date`, 
+    	$sql = "INSERT INTO pogstone_authnet_messages (`civicrm_contribution_id`, `civicrm_recur_id`, `rec_type`, `message_date`, 
     	`x_response_code`, `x_response_reason_code`, `x_response_reason_text`, `x_avs_code`, `x_auth_code`, `x_trans_id`, `x_method`, `x_card_type`,
     	 `x_account_number`, `x_first_name`, `x_last_name`, `x_company`, `x_address`, `x_city`, `x_state`, `x_zip`, `x_country`, `x_phone`, `x_fax`,
     	  `x_email`, `x_invoice_num`, `x_description`, `x_type`, `x_cust_id`, `x_ship_to_first_name`, `x_ship_to_last_name`, `x_ship_to_company`, 
@@ -157,11 +157,11 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
 	
 		$params = array();
 		
-		print "<br>sql: ".$sql;
-		print "<br>About to execute logging sql.";
+		//print "<br>sql: ".$sql;
+		//print "<br>About to execute logging sql.";
        	 	$dao = CRM_Core_DAO::executeQuery( $sql, $params );
        	 	
-       	 	print "<br>done with sql logging.<br>";
+       	 	//print "<br>done with sql logging.<br>";
        	 	$dao->free();
     
     }

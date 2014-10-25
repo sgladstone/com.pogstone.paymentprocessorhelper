@@ -560,7 +560,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
 	$entitlement = new Entitlement();
 
 	if( $entitlement->isRunningCiviCRM_4_3()){
-		$tmp_from = " FROM civicrm_pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
+		$tmp_from = " FROM pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
         	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
         	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.x_subscription_id
         	  LEFT JOIN civicrm_financial_type recur_ct ON recur.financial_type_id = recur_ct.id
@@ -568,7 +568,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
         	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
 	}else{
-		$tmp_from = " FROM civicrm_pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
+		$tmp_from = " FROM pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
         	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
         	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.x_subscription_id
         	  LEFT JOIN civicrm_contribution_type recur_ct ON recur.contribution_type_id = recur_ct.id

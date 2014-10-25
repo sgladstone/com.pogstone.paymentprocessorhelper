@@ -9,14 +9,14 @@
     <email>info@pogstone.com</email>
   </maintainer>
   <releaseDate>2014-10-24</releaseDate>
-  <version>1.2</version>
+  <version>1.3</version>
   <develStage>alpha</develStage>
   <compatibility>
     <ver>4.3</ver>
     <ver>4.4</ver>
     
   </compatibility>
-  <comments></comments>
+  <comments>During uninstall or disable, MySQL tables are NOT removed.</comments>
   <civix>
     <namespace>CRM/Paymentprocessorhelper</namespace>
   </civix>
