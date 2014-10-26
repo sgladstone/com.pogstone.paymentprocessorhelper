@@ -5,20 +5,7 @@
  */
 class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
   
-
   
-
-
-//require_once 'CRM/Contact/Form/Search/Custom/Base.php';
-
-//class CRM_Contact_Form_Search_Custom_PaymentProcessorMessages
-//   extends    CRM_Contact_Form_Search_Custom_Base
-//   implements CRM_Contact_Form_Search_Interface {
-
-  //  protected $_eventID   = null;
-  //  protected $_pricesetOptionId = null;
-  
-   
     protected $_statusChoices = null;  
     protected $_userChoices = null; 
 
@@ -40,17 +27,18 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
      	$this->setTitle('Payment Processor Messages');
      	
      	
-	
-	  require_once 'utils/util_money.php';
-       if ( pogstone_is_user_authorized('access CiviContribute') == false ){
-      		 $this->setTitle('Not Authorized');
-       		return; 
-       
-       }
+      $config = CRM_Core_Config::singleton();
+	if ($config->userSystem->is_drupal){
+	      // This is a Drupal install, check user authority. 
+	        if( user_access('access CiviContribute') == false){	
+	      		 $this->setTitle('Not Authorized');
+	       		return; 
+	       
+	       }
+	}
         
         
-        require_once( 'utils/CreditCardUtils.php') ; 
-        $creditCardUtils = new CreditCardUtils();     
+      
         
 	$status_choices = array();
 	$status_choices[''] = " -- select --"; 
@@ -87,19 +75,64 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
                     ts( 'Transaction Types(Auth.net only)' ),
                     $tran_type_choices,
                     false );
-          
+        
+         $pay_pal_type = "PayPal"; 
+       $params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' => $pay_pal_type,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $pay_pal_type){
+		$bool_str = $tmp['name'];
+		$pay_pal_enabled = $bool_str === 'true'? true: false;
+	
+	}
+	//
+	 $authnet_type = "AuthNet"; 
+       $params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' => $authnet_type,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $authnet_type){
+		$bool_str = $tmp['name'];
+		$authnet_enabled = $bool_str === 'true'? true: false;
+	
+	}  
+	
+	//
+	 $eway_type = "eWay_Recurring"; 
+       $params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' =>$eway_type,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $eway_type){
+		$bool_str = $tmp['name'];
+		$eway_enabled = $bool_str === 'true'? true: false;
+	
+	}
           
               
         $processor_choices = array();
        // $processor_choices[''] = " -- select --"; 
-        if( $creditCardUtils->isAuthorizeNetEnabled() ){
+        if($authnet_enabled ){
 		$processor_choices['authorize.net'] = "Authorize.net";
 	}
-	if( $creditCardUtils->isPayPalEnabled() ){
+	if( $pay_pal_enabled ){
 		$processor_choices['paypal'] = "PayPal"; 
 	} 
 	
-	if( $creditCardUtils->isEWayEnabled() ){
+	if($eway_enabled ){
 		$processor_choices['eway'] = "eWay";  
 	}
 	
@@ -184,7 +217,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
          $form->addDate('end_date', ts('...through'), false, array( 'formatType' => 'custom' ) );            
                     
         
-      if( $creditCardUtils->isAuthorizeNetEnabled() ){
+        if($authnet_enabled ){
      $form->assign( 'elements', array( 'payment_processor_type_choices', 'start_date', 'end_date' , 'transaction_id', 'subscription_id',  'status_choices', 'tran_type_choices', 'contrib_id_choice',  'recur_choice', 'amount', 'first_name', 'last_name', 'layout_choice' ) );
      
      
@@ -223,10 +256,13 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
          `receipt_id`, `transaction_subject`, `shipping`, `product_type`, `time_created`, `ipn_track_id`, 
          `civicrm_contribution_id`, `civicrm_recur_id`, `civicrm_processed`
     */
-    	require_once( 'utils/CreditCardUtils.php') ; 
-       $creditCardUtils = new CreditCardUtils(); 
+   
+        $processor_type = $this->_formValues['payment_processor_type_choices']; 
+        
+        
+       if( $processor_type == "paypal"){
        
-       if( $creditCardUtils->isPayPalEnabled() ){
+      
        	  $this->_columns = array( 
 				 ts('message_date') => 'message_date',        			
         			 ts('rec_type') => 'rec_type' ,
@@ -269,7 +305,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
         			 
        
        
-       }else if( $creditCardUtils->isAuthorizeNetEnabled() ){
+       }else if( $processor_type == "authorize.net" ){
        
     
         $tmp_array =  array( 
@@ -342,7 +378,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
         			 
         	  $this->_columns = $tmp_array ; 		 
         			 
-        	}else if( $creditCardUtils->isEWayEnabled() ){
+        	}else if( $processor_type == "eway" ){
        
     
         $this->_columns = array( 
@@ -380,22 +416,30 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
                   $includeContactIDs = false,  $onlyIDs = false ) {
                   
           // check authority of end-user
-       require_once 'utils/util_money.php';
-       if ( pogstone_is_user_authorized('access CiviContribute') == false ){
-       		return "select 'You are not authorized to this area' as total_amount from  civicrm_contact where 1=0 limit 1"; 
-       		
-       }
+       $config = CRM_Core_Config::singleton();
+	if ($config->userSystem->is_drupal){
+	      // This is a Drupal install, check user authority. 
+	        if( user_access('access CiviContribute') == false){	
+	      		 
+	       		return "select 'You are not authorized to this area' as total_amount from  civicrm_contact where 1=0 limit 1"; ; 
+	       
+	       }
+	}
+      
        
-        require_once( 'utils/CreditCardUtils.php') ; 
-       $creditCardUtils = new CreditCardUtils();
+       
+    
        
          if ( $onlyIDs ) {
        $selectClause  = "contact_a.id as contact_id, contact_a.id as id ";
        }else{
        
-       
-       
-       if( $creditCardUtils->isPayPalEnabled() ){
+      
+	
+        $processor_type = $this->_formValues['payment_processor_type_choices']; 
+        
+        
+       if( $processor_type == "paypal"){
        	 $selectClause = "concat(msgs.last_name, ',' , msgs.first_name) as sort_name  , 
        	  `civicrm_recur_id` , c.id as crm_contrib_id, c.contact_id as contact_id, contact_a.sort_name as crm_contact_name,  
        	  recur.id as crm_recur_id, ct.name as contrib_type_name, recur_ct.name as recur_contrib_type_name, recur.contact_id as recur_contact_id, recur_contact.id as recur_contact_id,
@@ -409,7 +453,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
        	 msgs.residence_country, msgs.receipt_id, msgs.transaction_subject, msgs.shipping, msgs.product_type, msgs.time_created, msgs.ipn_track_id,
        	 msgs.civicrm_contribution_id, msgs.civicrm_recur_id, msgs.civicrm_processed"; 
        
-       }else if( $creditCardUtils->isAuthorizeNetEnabled()  ){
+       }else if( $processor_type == "authorize.net" ){
        
        	
           	
@@ -431,7 +475,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
          `rec_type` ,  `message_date` ,  `x_response_code` ,  `x_response_reason_code` ,  `x_response_reason_text` ,  `x_avs_code` ,  `x_auth_code` ,  `x_trans_id` ,  `x_method` ,  `x_card_type` ,  `x_account_number` , `x_first_name` ,  `x_last_name` ,  `x_company` ,  `x_address` ,  `x_city` ,  `x_state` ,  `x_zip` ,  `x_country` ,  `x_phone` ,  `x_fax` ,  `x_email` ,  `x_invoice_num` ,  `x_description` ,  `x_type` ,  `x_cust_id` ,  `x_ship_to_first_name` ,  `x_ship_to_last_name` ,  `x_ship_to_company` , `x_ship_to_address` ,  `x_ship_to_city` ,  `x_ship_to_state` ,  `x_ship_to_zip` ,  `x_ship_to_country` ,  `x_amount` ,  `x_tax` ,  `x_duty` ,  `x_freight` ,  `x_tax_exempt` ,  `x_po_num` ,  `x_MD5_Hash` ,  `x_cvv2_resp_code` ,  `x_cavv_response` ,  `x_test_request` , `x_subscription_id` ,  `x_subscription_paynum`  "; 
          
          }
-       }else if($creditCardUtils->isEWayEnabled()){
+       }else if( $processor_type == "eway"){
        
                // Raw 'eway_email_date' is always in America/New York time zone. Need to adjust to the time zone of the client, such as Sydney in Australia
        		   $hours_to_add = ""; 
@@ -472,10 +516,10 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
 
         
         }
-          if( $creditCardUtils->isPayPalEnabled() ){
+          if( $processor_type == 'paypal' ){
           	$groupBy = " GROUP by msgs.ipn_track_id ";
           
-          }else if( $creditCardUtils->isAuthorizeNetEnabled() ){
+          }else if( $processor_type == 'authorize.net' ){
           	// 'layout_choice'
           	$tmp_layout_choice = $this->_formValues['layout_choice']; 
           	if( $tmp_layout_choice == 'combine_possible_duplicates'){
@@ -509,57 +553,38 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
     
     function from( ) {
     
+    	 $processor_type = $this->_formValues['payment_processor_type_choices']; 
     
-    	 require_once( 'utils/CreditCardUtils.php') ; 
-       $creditCardUtils = new CreditCardUtils(); 
-       if( $creditCardUtils->isEWayEnabled() ){
-       		require_once ('utils/Entitlement.php');
-	       $entitlement = new Entitlement();
+   
+       if( $processor_type == 'eway' ){
+       		
 
-	if( $entitlement->isRunningCiviCRM_4_3()){
-		$tmp_from = " FROM pogstone_eway_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.eway_transaction_id = c.trxn_id 
-		  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.eway_invoice_reference_number
-		   LEFT JOIN civicrm_financial_type recur_ct ON recur.financial_type_id = recur_ct.id
-        	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id 
-        	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
-        	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
-	}else{
-		$tmp_from = " FROM pogstone_eway_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.eway_transaction_id = c.trxn_id 
-        	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
-        	  LEFT JOIN civicrm_contribution_type ct ON c.contribution_type_id = ct.id";
+	$tmp_from = " FROM pogstone_eway_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.eway_transaction_id = c.trxn_id 
+	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.eway_invoice_reference_number
+	   LEFT JOIN civicrm_financial_type recur_ct ON recur.financial_type_id = recur_ct.id
+	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id 
+	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
+	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
-	}
+	
 	
        
-       }else if( $creditCardUtils->isPayPalEnabled() ){
-       	require_once ('utils/Entitlement.php');
-	$entitlement = new Entitlement();
+       }else if( $processor_type == 'paypal' ){
+       	
 
-	if( $entitlement->isRunningCiviCRM_4_3()){
-		$tmp_from = " FROM pogstone_paypal_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.txn_id = c.trxn_id 
-        	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
-        	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.recurring_payment_id
-        	  LEFT JOIN civicrm_financial_type recur_ct ON recur.financial_type_id = recur_ct.id
-        	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id
-        	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
-	}else{
-		$tmp_from = " FROM pogstone_paypal_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.txn_id = c.trxn_id 
-        	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
-        	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.recurring_payment_id
-        	  LEFT JOIN civicrm_contribution_type recur_ct ON recur.contribution_type_id = recur_ct.id
-        	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id
-        	  LEFT JOIN civicrm_contribution_type ct ON c.contribution_type_id = ct.id";
+	$tmp_from = " FROM pogstone_paypal_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.txn_id = c.trxn_id 
+	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
+	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.recurring_payment_id
+	  LEFT JOIN civicrm_financial_type recur_ct ON recur.financial_type_id = recur_ct.id
+	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id
+	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
-	}
+	
        
-       }else if( $creditCardUtils->isAuthorizeNetEnabled() ){
-    
-    require_once ('utils/Entitlement.php');
-	$entitlement = new Entitlement();
-
-	if( $entitlement->isRunningCiviCRM_4_3()){
+       }else if( $processor_type == 'authorize.net'){
+    	
 		$tmp_from = " FROM pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
         	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
         	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.x_subscription_id
@@ -567,15 +592,7 @@ class CRM_Paymentprocessorhelper_Form_Search_PaymentProcessorMessages extends CR
         	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id
         	  LEFT JOIN civicrm_financial_type ct ON c.financial_type_id = ct.id";
 	
-	}else{
-		$tmp_from = " FROM pogstone_authnet_messages as msgs LEFT JOIN civicrm_contribution c ON msgs.x_trans_id = c.trxn_id 
-        	  LEFT JOIN civicrm_contact contact_a ON c.contact_id = contact_a.id
-        	  LEFT JOIN civicrm_contribution_recur recur ON recur.processor_id = msgs.x_subscription_id
-        	  LEFT JOIN civicrm_contribution_type recur_ct ON recur.contribution_type_id = recur_ct.id
-        	  LEFT JOIN civicrm_contact recur_contact ON recur.contact_id = recur_contact.id
-        	  LEFT JOIN civicrm_contribution_type ct ON c.contribution_type_id = ct.id";
 	
-	}
     	}
         return $tmp_from;
 

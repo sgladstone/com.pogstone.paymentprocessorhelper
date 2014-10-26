@@ -47,15 +47,58 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
    
    	//init();
 
+	$pay_pal_type = "PayPal"; 
+	$authnet_type = "AuthNet"; 
+	$ewayemailrecur_type = "eWay_Recurring";
 	
 	
-	 require_once( 'utils/CreditCardUtils.php') ; 
-        $creditCardUtils = new CreditCardUtils();     
+	$params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' => $pay_pal_type,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $pay_pal_type){
+		$bool_str = $tmp['name'];
+		$pay_pal_enabled = $bool_str === 'true'? true: false;
+	
+	}
+	//  ( [is_error] => 0 [version] => 3 [count] => 1 [id] => PayPal [values] => Array ( [0] => Array ( [id] => PayPal [name] => false ) ) )
+	//print "<br><br>result:";
+	//print_r( $result); 
+	$params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' => $authnet_type,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $authnet_type){
+		$bool_str = $tmp['name'];
+		$authnet_enabled = $bool_str === 'true'? true: false;
+	
+	}
+	// Now check for eWay recurring (email notifications)
+	$params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'vendor_type' => $ewayemailrecur_type ,
+	);
+	$result = civicrm_api('PaymentProcessorTypeHelper', 'get', $params);
+	
+	$tmp  = $result['values'][0];
+	if($tmp['id'] == $ewayemailrecur_type ){
+		$bool_str = $tmp['name'];
+		$ewayrecur_enabled = $bool_str === 'true'? true: false;
+	
+	}
 	
 	
-	
-	if(  $creditCardUtils->isPayPalEnabled() ){
-	    
+	if( $pay_pal_enabled  ){
+   //   print "<br><br><br> PayPal enabled"; 
 	    
 		$sql = 	"SELECT msgs.amount, msgs.txn_id,  msgs.message_date, concat(msgs.last_name, ',' , msgs.first_name) as sort_name , `civicrm_recur_id` , c.id as crm_contrib_id, c.contact_id as crm_contact_id, con.sort_name as crm_contact_name, recur.id as crm_recur_id, ct.name as contrib_type_name, recur_ct.id as recur_contribution_type , recur_ct.name as recur_contrib_type_name, recur.contact_id as recur_contact_id, recur_contact.id as recur_contact_id, recur_contact.sort_name as recur_contact_name, `rec_type` , date_format(message_date, '%Y%m%d'  ) as message_date , `payment_status` ,
 			rp_invoice_id, recur.amount  as crm_amount
@@ -65,7 +108,8 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
        GROUP by msgs.ipn_track_id ";
 		
        
-       	    }else if(  $creditCardUtils->isAuthorizeNetEnabled() ){
+       	    }else if(  $authnet_enabled ){
+       	    // print "<br><br><br> Authorize.net enabled"; 
        		
        		$sql = "SELECT concat(x_last_name, ',' , x_first_name) as sort_name , `civicrm_recur_id` , c.id as crm_contrib_id, c.contact_id as crm_contact_id, con.sort_name as crm_contact_name, recur.id as crm_recur_id, ct.name as contrib_type_name, recur_ct.id as recur_contribution_type , recur_ct.name as recur_contrib_type_name, recur.contact_id as recur_contact_id, recur_contact.id as recur_contact_id, recur_contact.sort_name as recur_contact_name, `rec_type` , date_format(message_date, '%Y%m%d'  ) as message_date ,
        		x_amount as message_amount, 
@@ -76,7 +120,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
        AND msgs.message_date >= '2013-03-01'  " ; 
        		
        		
-      }else if( $creditCardUtils->isEWayEnabled() ){
+      }else if( $ewayrecur_enabled){
        		   // Currently only completed eWay transactions have an amount > 0. 
        		   // Raw 'eway_email_date' is always in America/New York time zone. Need to adjust to the time zone of the client, such as Sydney in Australia
        		   $hours_to_add = ""; 
@@ -278,7 +322,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 		*/
 		
 	function handleCancelledSubscriptions(){
-		print "<h2>Section: If recurring contribution is cancelled, then update the pending contribution to cancelled status as well. </h2>"; 
+		// print "<h2>Section: If recurring contribution is cancelled, then update the pending contribution to cancelled status as well. </h2>"; 
 	// If recurring subscription is cancelled, make sure the pending contribution is also cancelled. 
 	$cancelled_status_id = "3"; 
 	
@@ -714,10 +758,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 	 function createContributionBasedOnExistingContribution($base_contrib_id, $trxn_id, $trxn_receive_date  ){
 	 	
 	 	$rtn_code = false; 
-	 	// require_once('utils/Entitlement.php');
-		// $tmpEntitlement = new Entitlement();
-		
-		
+	 	
 		
 		// Get the first completed contribution ID from the subscription. Will use the details
 		// to create the lastest contribution. Only difference should be date, and transaction ID. 
