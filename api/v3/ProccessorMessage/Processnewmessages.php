@@ -793,10 +793,8 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 				
 		$new_contrib_tmp = $base_result['values'][0]; 
 		
-		// Need to get custom data values from contribution.
-		require_once( 'utils/util_custom_fields.php');
-		$customFieldsUtils = new util_custom_fields();
-		$tmp_custom_data_api_names = $customFieldsUtils->getContributionAPINames();
+		// Need to get custom data values from contribution.	
+		$tmp_custom_data_api_names = getContributionAPINames();
 		
 		
 		
@@ -924,4 +922,48 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 	 
 	 
 	 }
+	 
+	 function getContributionAPINames(){
+ 
+ 	$all_api_names = array();
+ 	
+ 	
+ 	// get all active set IDs.
+ 	$set_sql = "SELECT id as set_id FROM civicrm_custom_group
+ 			WHERE extends = 'Contribution' AND is_active =1 "; 
+ 	
+ 	$all_set_ids = array();
+ 	$dao =& CRM_Core_DAO::executeQuery($set_sql );
+ 	while( $dao->fetch() ) {
+ 		$all_set_ids[] = $dao->set_id; 
+ 	
+ 	}
+ 	
+ 	$dao->free();
+ 	
+ 	// get active fields for each set.
+ 	foreach( $all_set_ids as $cur_set_id){
+ 		$params = array(
+		  'version' => 3,
+		  'sequential' => 1,
+		  'custom_group_id' => $cur_set_id,
+		  'is_active' => 1,
+		);
+		$result = civicrm_api('CustomField', 'get', $params);
+		if( $result['is_error'] == 0){
+			$tmp_values = $result['values'];
+			foreach($tmp_values as $cur){
+				$cur_id = $cur['id']; 
+				$cur_name = $cur['name'];
+				if( $cur_name <> "Deposit_id" &&  $cur_name <> "Batch_id" ){
+					$all_api_names[] = "custom_".$cur_id;
+				}
+			}
+		}
+ 	}
+ 	
+ 	return $all_api_names;
+ 	
+ 
+ }
 	 
