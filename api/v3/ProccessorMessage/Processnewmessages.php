@@ -47,11 +47,11 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
    
    	//init();
 
-	$pay_pal_type = "PayPal"; 
-	$authnet_type = "AuthNet"; 
+	
+	 
 	$ewayemailrecur_type = "eWay_Recurring";
 	
-	
+	$pay_pal_type = "PayPal"; 
 	$params = array(
 	  'version' => 3,
 	  'sequential' => 1,
@@ -68,6 +68,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 	//  ( [is_error] => 0 [version] => 3 [count] => 1 [id] => PayPal [values] => Array ( [0] => Array ( [id] => PayPal [name] => false ) ) )
 	//print "<br><br>result:";
 	//print_r( $result); 
+	$authnet_type = "AuthNet";
 	$params = array(
 	  'version' => 3,
 	  'sequential' => 1,
@@ -221,7 +222,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 		$card_billingname = $dao->sort_name;
 		$crm_amount = $dao->crm_amount;
 			
-		if(  $creditCardUtils->isPayPalEnabled() ){
+		if(  $pay_pal_enabled  ){
 		     
 		        $receive_date = $dao->message_date;
 			$amount = $dao->amount;
@@ -229,7 +230,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 			$processor_subscription_id = $dao->recurring_payment_id;
 			// print "<br>Inside paypal section: amt: ".$amount; 
 		
-		}else if( $creditCardUtils->isAuthorizeNetEnabled()  ){
+		}else if( $authnet_enabled  ){
 		
 		        $receive_date = $dao->message_date;
 			$amount = $dao->x_amount;
@@ -244,7 +245,7 @@ function civicrm_api3_proccessor_message_processnewmessages($params) {
 			
 			}
 		
-		}else if($creditCardUtils->isEWayEnabled() ){
+		}else if($ewayrecur_enabled ){
 			// recur.id as crm_recur_id,  msgs.eway_transaction_id,   `eway_email_date`, 
 			
 			$receive_date = $dao->adj_eway_email_date;  
