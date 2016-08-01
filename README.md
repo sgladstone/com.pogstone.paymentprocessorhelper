@@ -1,6 +1,9 @@
 com.pogstone.paymentprocessorhelper
 ===================================
 
+Do NOT use this extension. It is obsolete. Also there have been numerous updates and improvements to CiviCRM core that render this extension unneeded. 
+
+
 The basic structure of this CiviCRM native extension:
 
 1) Intercept all messages/notifications/data from a payment processor and immediately insert it into a database table. (Do not attempt to make sense of it and/or create a contribution, etc) This bypasses the core logic of trying to create a contribution immediatly when an IPN notification is received. (MySQL tables created by this extension: "pogstone_authnet_messages" and "pogstone_paypal_messages")
